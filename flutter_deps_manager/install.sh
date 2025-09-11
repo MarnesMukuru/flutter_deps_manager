@@ -7,7 +7,7 @@ set -euo pipefail
 
 CLI_NAME="flutter-deps-upgrade"
 VERSION="1.0.0"  # This will be updated by GitHub Actions
-GITHUB_REPO="marnesfourie/flutter_deps_manager_project"  # Update this with your actual repo!
+GITHUB_REPO="MarnesMukuru/flutter_deps_manager"
 INSTALL_DIR="${FLUTTER_DEPS_INSTALL_DIR:-/usr/local}"
 
 # Colors
