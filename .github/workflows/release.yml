@@ -46,57 +46,18 @@ jobs:
         find flutter_deps_manager/dist -type f -ls
         
     - name: Create release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.version.outputs.VERSION }}
-        release_name: Flutter Dependencies Upgrade CLI ${{ steps.version.outputs.VERSION }}
+        name: Flutter Dependencies Upgrade CLI ${{ steps.version.outputs.VERSION }}
         body_path: flutter_deps_manager/dist/RELEASE_NOTES.md
         draft: false
         prerelease: false
-        
-    - name: Upload tar.gz archive
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: flutter_deps_manager/dist/archives/flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.tar.gz
-        asset_name: flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.tar.gz
-        asset_content_type: application/gzip
-        
-    - name: Upload zip archive
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: flutter_deps_manager/dist/archives/flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.zip
-        asset_name: flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.zip
-        asset_content_type: application/zip
-      continue-on-error: true
-        
-    - name: Upload checksums
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: flutter_deps_manager/dist/checksums.txt
-        asset_name: checksums.txt
-        asset_content_type: text/plain
-        
-    - name: Upload installer script
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: flutter_deps_manager/dist/installers/install.sh
-        asset_name: install.sh
-        asset_content_type: text/plain
+        files: |
+          flutter_deps_manager/dist/archives/flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.tar.gz
+          flutter_deps_manager/dist/archives/flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.zip
+          flutter_deps_manager/dist/checksums.txt
+          flutter_deps_manager/dist/installers/install.sh
 
   update-installer:
     needs: build-and-release
