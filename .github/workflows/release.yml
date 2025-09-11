@@ -90,8 +90,8 @@ jobs:
         
     - name: Commit and push installer update
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config --local user.email "marnes@mukuru.com"
+        git config --local user.name "MarnesMukuru"
         git add flutter_deps_manager/install.sh
         git commit -m "Update installer script for release ${{ steps.version.outputs.VERSION }}" || exit 0
         git push origin main
