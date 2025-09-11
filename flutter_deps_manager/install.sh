@@ -41,7 +41,7 @@ detect_install_mode() {
     # Try to create /usr/local/bin if it doesn't exist (with sudo)
     if [[ ! -d "/usr/local/bin" ]]; then
         if command -v sudo >/dev/null 2>&1; then
-            print_info "Creating /usr/local/bin directory (requires sudo)"
+            # Try to create directory silently
             if sudo mkdir -p /usr/local/bin /usr/local/lib 2>/dev/null; then
                 echo "/usr/local"
                 return
@@ -51,13 +51,11 @@ detect_install_mode() {
     
     # Check if we need sudo for /usr/local
     if [[ -d "/usr/local/bin" ]] && ! [[ -w "/usr/local/bin" ]] && command -v sudo >/dev/null 2>&1; then
-        print_info "System-wide installation available (will prompt for password)"
         echo "/usr/local"
         return
     fi
     
     # Fall back to user directory
-    print_info "Using user installation (no admin rights needed)"
     echo "$HOME/.local"
 }
 
