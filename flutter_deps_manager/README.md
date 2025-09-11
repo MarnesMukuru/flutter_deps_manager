@@ -4,25 +4,45 @@
 
 ## ⚡ Quick Start
 
-### 🚀 One-Line Install (Recommended)
+### 🚀 One-Line Install (Smart Auto-Detection)
 ```bash
 curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.0.3/install.sh | bash
 ```
 
-**Alternative methods:**
+**The installer automatically:**
+- ✅ **Detects permissions** and chooses the best installation mode
+- ✅ **Sets up PATH** automatically for user installations  
+- ✅ **Handles sudo** prompts only when needed
+- ✅ **Works immediately** after installation
+
+### 📍 Installation Modes
+
+#### 🌐 System-Wide Installation (Recommended)
+- **When:** You have admin rights or can use `sudo`
+- **Location:** `/usr/local/bin/flutter-deps-upgrade`
+- **Access:** Available to all users immediately
+- **Command:** Just run the installer (will prompt for password)
+
+#### 👤 User Installation (No Admin Rights)
+- **When:** No admin rights or prefer user-only install
+- **Location:** `~/.local/bin/flutter-deps-upgrade`
+- **Access:** Current user only
+- **PATH:** Automatically added to your shell config
+- **Command:** `FLUTTER_DEPS_INSTALL_DIR=~/.local curl -fsSL ... | bash`
+
+### 🔄 Alternative Methods
 ```bash
+# Force user installation (no sudo)
+FLUTTER_DEPS_INSTALL_DIR=~/.local curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.0.3/install.sh | bash
+
 # Using wget
 wget -qO- https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.0.3/install.sh | bash
 
-# Install to custom location
-export FLUTTER_DEPS_INSTALL_DIR=~/.local
-curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.0.3/install.sh | bash
-
-# Manual download and install
+# Manual download
 wget https://github.com/MarnesMukuru/flutter_deps_manager/releases/latest/download/flutter-deps-upgrade-1.0.3.tar.gz
-tar -xzf flutter-deps-upgrade-1.0.3.tar.gz
-cd flutter-deps-upgrade-1.0.3
-./install-cli.sh global
+tar -xzf flutter-deps-upgrade-1.0.3.tar.gz && cd flutter-deps-upgrade-1.0.3
+./install-cli.sh global  # System-wide
+./install-cli.sh global --prefix ~/.local  # User-only
 ```
 
 ### Use Anywhere
@@ -168,19 +188,28 @@ rm -rf ~/.local/lib/flutter-deps-upgrade
 ## 🐛 Troubleshooting
 
 ### "command not found: flutter-deps-upgrade"
-1. Check if it's installed: `ls -la /usr/local/bin/flutter-deps-upgrade`
-2. Check your PATH: `echo $PATH`
-3. Add to PATH if needed: `export PATH="/usr/local/bin:$PATH"`
-4. Reload shell: `source ~/.bashrc` or `source ~/.zshrc`
 
-### Permission Issues
+**For System-Wide Installation:**
+1. Check if installed: `ls -la /usr/local/bin/flutter-deps-upgrade`
+2. If missing, reinstall: `curl -fsSL ... | bash`
+
+**For User Installation:**
+1. **Restart your terminal** (PATH was added automatically)
+2. Or reload shell: `source ~/.zshrc` (or `~/.bashrc`)
+3. Check installation: `ls -la ~/.local/bin/flutter-deps-upgrade`
+
+### Still Having Issues?
+
 ```bash
-# Install to user directory instead
-export FLUTTER_DEPS_INSTALL_DIR=~/.local
-curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.0.3/install.sh | bash
+# Check which installation mode was used
+which flutter-deps-upgrade
 
-# Then add to PATH
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+# If system-wide install failed, force user install
+FLUTTER_DEPS_INSTALL_DIR=~/.local curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.0.3/install.sh | bash
+
+# Manually add to PATH (if needed)
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
 ```
 
 ### Download Issues
