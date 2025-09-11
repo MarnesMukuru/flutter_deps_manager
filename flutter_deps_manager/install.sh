@@ -6,7 +6,7 @@
 set -euo pipefail
 
 CLI_NAME="flutter-deps-upgrade"
-VERSION="1.0.4"
+VERSION="1.0.5"
 GITHUB_REPO="MarnesMukuru/flutter_deps_manager"
 INSTALL_DIR="${FLUTTER_DEPS_INSTALL_DIR:-/usr/local}"
 
