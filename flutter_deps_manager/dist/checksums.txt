@@ -1,0 +1,6 @@
+# Flutter Dependencies Upgrade CLI v1.0.0
+# SHA256 Checksums
+# Generated on 2025-09-11 06:52:03 UTC
+
+1fd778f7452c1580093c14ff3336ae2101a0da06b0acd48ee986b5b10f4420f0  flutter-deps-upgrade-1.0.0.zip
+b84d0f36c1c6d532871754ff1a9849b3bd9f03525d26ca44b6054f7f68a69d92  flutter-deps-upgrade-1.0.0.tar.gz
