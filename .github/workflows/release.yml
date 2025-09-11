@@ -1,0 +1,240 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set version from tag or input
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION="${GITHUB_REF#refs/tags/}"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "VERSION_NUMBER=${VERSION#v}" >> $GITHUB_OUTPUT
+        echo "Release version: $VERSION"
+    
+    - name: Build distribution packages
+      run: |
+        cd flutter_deps_manager
+        chmod +x ./build.sh
+        ./build.sh build --clean --version "${{ steps.version.outputs.VERSION_NUMBER }}"
+        
+    - name: List build artifacts
+      run: |
+        echo "Build artifacts:"
+        find flutter_deps_manager/dist -type f -ls
+        
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        release_name: Flutter Dependencies Upgrade CLI ${{ steps.version.outputs.VERSION }}
+        body_path: flutter_deps_manager/dist/RELEASE_NOTES.md
+        draft: false
+        prerelease: false
+        
+    - name: Upload tar.gz archive
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: flutter_deps_manager/dist/archives/flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.tar.gz
+        asset_name: flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Upload zip archive
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: flutter_deps_manager/dist/archives/flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.zip
+        asset_name: flutter-deps-upgrade-${{ steps.version.outputs.VERSION_NUMBER }}.zip
+        asset_content_type: application/zip
+      continue-on-error: true
+        
+    - name: Upload checksums
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: flutter_deps_manager/dist/checksums.txt
+        asset_name: checksums.txt
+        asset_content_type: text/plain
+        
+    - name: Upload installer script
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: flutter_deps_manager/dist/installers/install.sh
+        asset_name: install.sh
+        asset_content_type: text/plain
+
+  update-installer:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Set version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION="${GITHUB_REF#refs/tags/}"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "VERSION_NUMBER=${VERSION#v}" >> $GITHUB_OUTPUT
+        
+    - name: Update main installer script
+      run: |
+        # Create updated installer with correct GitHub repo and version
+        cat > flutter_deps_manager/install.sh << 'EOF'
+        #!/bin/bash
+        
+        # Flutter Dependencies Upgrade CLI - Web Installer
+        # One-line installation script for GitHub releases
+        
+        set -euo pipefail
+        
+        CLI_NAME="flutter-deps-upgrade"
+        VERSION="${{ steps.version.outputs.VERSION_NUMBER }}"
+        GITHUB_REPO="${{ github.repository }}"
+        INSTALL_DIR="${FLUTTER_DEPS_INSTALL_DIR:-/usr/local}"
+        
+        # Colors
+        RED='\033[0;31m'
+        GREEN='\033[0;32m'
+        YELLOW='\033[1;33m'
+        BLUE='\033[0;34m'
+        CYAN='\033[0;36m'
+        BOLD='\033[1m'
+        NC='\033[0m'
+        
+        print_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+        print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+        print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+        print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+        print_header() { echo -e "${CYAN}${BOLD}$1${NC}"; }
+        
+        main() {
+            print_header "🚀 Installing $CLI_NAME v$VERSION"
+            
+            # Check requirements
+            if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+                print_error "Either curl or wget is required for installation"
+                exit 1
+            fi
+            
+            if ! command -v tar >/dev/null 2>&1; then
+                print_error "tar is required for installation"
+                exit 1
+            fi
+            
+            # Detect platform
+            local platform=$(uname -s | tr '[:upper:]' '[:lower:]')
+            local arch=$(uname -m)
+            local archive_name="${CLI_NAME}-${VERSION}.tar.gz"
+            local download_url="https://github.com/$GITHUB_REPO/releases/download/v$VERSION/$archive_name"
+            
+            print_info "Platform: $platform $arch"
+            print_info "Download URL: $download_url"
+            
+            # Create temporary directory
+            local temp_dir=$(mktemp -d)
+            local archive_file="$temp_dir/$archive_name"
+            
+            # Download archive
+            print_info "📥 Downloading $CLI_NAME v$VERSION..."
+            if command -v curl >/dev/null 2>&1; then
+                if ! curl -fsSL "$download_url" -o "$archive_file"; then
+                    print_error "Failed to download from GitHub releases"
+                    print_info "Make sure the release exists: https://github.com/$GITHUB_REPO/releases/tag/v$VERSION"
+                    exit 1
+                fi
+            elif command -v wget >/dev/null 2>&1; then
+                if ! wget -q "$download_url" -O "$archive_file"; then
+                    print_error "Failed to download from GitHub releases"
+                    exit 1
+                fi
+            fi
+            
+            # Extract archive
+            print_info "📦 Extracting archive..."
+            cd "$temp_dir"
+            tar -xzf "$archive_file"
+            
+            # Find extracted directory
+            local extracted_dir=$(find . -maxdepth 1 -type d -name "${CLI_NAME}-*" | head -1)
+            if [[ -z "$extracted_dir" ]]; then
+                print_error "Could not find extracted directory"
+                exit 1
+            fi
+            
+            # Install using bundled installer
+            print_info "🔧 Installing using bundled installer..."
+            cd "$extracted_dir"
+            
+            if [[ -f "install-cli.sh" ]]; then
+                ./install-cli.sh global --prefix "$INSTALL_DIR" "$@"
+            else
+                print_error "Installation script not found in package"
+                exit 1
+            fi
+            
+            # Cleanup
+            rm -rf "$temp_dir"
+            
+            print_success "🎉 Installation completed!"
+            print_info ""
+            print_info "Usage:"
+            print_info "  $CLI_NAME --help                    # Show help"
+            print_info "  $CLI_NAME analyze app               # Preview upgrades" 
+            print_info "  $CLI_NAME upgrade --all --validate  # Upgrade all projects"
+            print_info ""
+            print_info "Documentation: https://github.com/$GITHUB_REPO#readme"
+        }
+        
+        main "$@"
+        EOF
+        
+    - name: Commit and push installer update
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add flutter_deps_manager/install.sh
+        git commit -m "Update installer script for release ${{ steps.version.outputs.VERSION }}" || exit 0
+        git push
