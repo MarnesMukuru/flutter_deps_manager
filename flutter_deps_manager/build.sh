@@ -294,7 +294,7 @@ set -euo pipefail
 
 CLI_NAME="flutter-deps-upgrade"
 VERSION="${VERSION}"
-GITHUB_REPO="your-username/flutter-deps-manager-project"  # Update this!
+GITHUB_REPO="MarnesMukuru/flutter_deps_manager"
 INSTALL_DIR="\${FLUTTER_DEPS_INSTALL_DIR:-/usr/local}"
 
 # Colors
@@ -452,7 +452,7 @@ Intelligent Flutter dependency upgrader with automatic monorepo detection.
 
 ### One-line Install (Recommended)
 \`\`\`bash
-curl -fsSL https://raw.githubusercontent.com/your-username/flutter-deps-manager-project/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/MarnesMukuru/flutter_deps_manager/main/flutter_deps_manager/install.sh | bash
 \`\`\`
 
 ### Manual Download
@@ -503,7 +503,7 @@ sha256sum flutter-deps-upgrade-$VERSION.tar.gz
 
 ---
 
-**Need help?** See the [README](https://github.com/your-username/flutter-deps-manager-project#readme) or create an [issue](https://github.com/your-username/flutter-deps-manager-project/issues).
+**Need help?** See the [README](https://github.com/MarnesMukuru/flutter_deps_manager#readme) or create an [issue](https://github.com/MarnesMukuru/flutter_deps_manager/issues).
 EOF
     
     print_success "✅ Release notes created at $notes_file"
