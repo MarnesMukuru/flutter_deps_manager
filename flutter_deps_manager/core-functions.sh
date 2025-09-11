@@ -726,23 +726,28 @@ categorize_validation_results() {
         echo -e "  ${YELLOW}•${NC} Stacked config paths suggestion - Non-breaking configuration improvement"
     fi
     
-    # Check for discontinued packages
-    local discontinued_packages=$(echo "$validation_output" | grep -o "[a-zA-Z_][a-zA-Z0-9_]*.*discontinued" || echo "")
+    # Check for discontinued packages (only check for actual Flutter deprecation warnings)
+    local discontinued_packages=$(echo "$validation_output" | grep -E "package:[a-zA-Z_][a-zA-Z0-9_]+ is deprecated|[a-zA-Z_][a-zA-Z0-9_]+ package has been discontinued" || echo "")
     if [ -n "$discontinued_packages" ]; then
         echo -e "\n${RED}🔔 ATTENTION REQUIRED (Plan for future):${NC}"
         echo -e "  ${RED}•${NC} Discontinued packages found:"
-        while IFS= read -r package_info; do
-            local package_name=$(echo "$package_info" | cut -d' ' -f1)
-            echo -e "    ${RED}-${NC} $package_name - Consider finding replacement"
+        while IFS= read -r package_line; do
+            # Extract package name from actual Flutter deprecation messages
+            local package_name=$(echo "$package_line" | sed -E 's/.*package:([a-zA-Z_][a-zA-Z0-9_]+).*/\1/; s/.*([a-zA-Z_][a-zA-Z0-9_]+) package has been discontinued.*/\1/')
+            if [[ "$package_name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+                echo -e "    ${RED}-${NC} $package_name - Consider finding replacement"
+                
+                # Provide specific suggestions for known discontinued packages
+                case "$package_name" in
+                    "flutter_markdown")
+                        echo -e "      ${BLUE}Suggestion:${NC} Consider migrating to flutter_widget_from_html"
+                        ;;
+                    "js")
+                        echo -e "      ${BLUE}Suggestion:${NC} Will be replaced automatically in future Flutter versions"
+                        ;;
+                esac
+            fi
         done <<< "$discontinued_packages"
-        
-        # Provide suggestions for common discontinued packages
-        if echo "$discontinued_packages" | grep -q "flutter_markdown"; then
-            echo -e "      ${BLUE}Suggestion:${NC} Consider migrating to flutter_widget_from_html"
-        fi
-        if echo "$discontinued_packages" | grep -q "js"; then
-            echo -e "      ${BLUE}Suggestion:${NC} Will be replaced automatically in future Flutter versions"
-        fi
     fi
     
     # Comprehensive upgrade summary (like your build.sh results)
