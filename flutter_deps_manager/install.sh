@@ -6,7 +6,7 @@
 set -euo pipefail
 
 CLI_NAME="flutter-deps-upgrade"
-VERSION="1.0.5"
+VERSION="1.0.6"
 GITHUB_REPO="MarnesMukuru/flutter_deps_manager"
 
 # Colors
