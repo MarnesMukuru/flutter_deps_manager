@@ -92,6 +92,11 @@ jobs:
       run: |
         git config --local user.email "marnes@mukuru.com"
         git config --local user.name "MarnesMukuru"
+        git checkout main
         git add flutter_deps_manager/install.sh
-        git commit -m "Update installer script for release ${{ steps.version.outputs.VERSION }}" || exit 0
-        git push origin main
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update installer script for release ${{ steps.version.outputs.VERSION }}"
+          git push origin main
+        fi
