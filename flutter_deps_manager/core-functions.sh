@@ -90,15 +90,32 @@ create_backup() {
 set_dependencies_to_any() {
     local pubspec_file="$1"
     
-    # Simple, safe approach using sed (same as working version)
-    # Convert caret constraints (^1.2.3) to 'any' - but skip flutter: lines
-    sed -i '' -E '/^  flutter:/!s/^(  [a-zA-Z_][a-zA-Z0-9_]*): \^[0-9].*/\1: any/' "$pubspec_file"
     
-    # Convert hard-coded versions (1.2.3) to 'any' - but skip sdk: lines and flutter: lines  
-    sed -i '' -E '/^  (sdk|flutter):/!s/^(  [a-zA-Z_][a-zA-Z0-9_]*): [0-9].*/\1: any/' "$pubspec_file"
-    
-    # Convert quoted range versions (">=1.0.0") to 'any' - but skip sdk: lines
-    sed -i '' -E '/^  sdk:/!s/^(  [a-zA-Z_][a-zA-Z0-9_]*): "[^"]*"/\1: any/' "$pubspec_file"
+    if [[ "${KEEP_PINNED:-false}" == "true" ]]; then
+        print_info "📌 KEEP_PINNED mode: Preserving exact version pins"
+        
+        # Convert caret constraints (^1.2.3) to 'any' - but skip flutter: lines
+        sed -i '' -E '/^  flutter:/!s/^(  [a-zA-Z_][a-zA-Z0-9_]*): \^[0-9].*/\1: any/' "$pubspec_file"
+        
+        # Convert quoted range versions (">=1.0.0") to 'any' - but skip sdk: lines
+        sed -i '' -E '/^  sdk:/!s/^(  [a-zA-Z_][a-zA-Z0-9_]*): "[^"]*"/\1: any/' "$pubspec_file"
+        
+        # Skip hard-coded versions (1.2.3) when KEEP_PINNED is true
+        # This preserves exact version pins like "package: 1.2.3"
+        local preserved_count=$(grep -E '^  [a-zA-Z_][a-zA-Z0-9_]*: [0-9]' "$pubspec_file" | wc -l | tr -d ' ')
+        print_info "✅ Preserved $preserved_count pinned version(s)"
+    else
+        # Original behavior: Convert all version constraints to 'any'
+        
+        # Convert caret constraints (^1.2.3) to 'any' - but skip flutter: lines
+        sed -i '' -E '/^  flutter:/!s/^(  [a-zA-Z_][a-zA-Z0-9_]*): \^[0-9].*/\1: any/' "$pubspec_file"
+        
+        # Convert hard-coded versions (1.2.3) to 'any' - but skip sdk: lines and flutter: lines  
+        sed -i '' -E '/^  (sdk|flutter):/!s/^(  [a-zA-Z_][a-zA-Z0-9_]*): [0-9].*/\1: any/' "$pubspec_file"
+        
+        # Convert quoted range versions (">=1.0.0") to 'any' - but skip sdk: lines
+        sed -i '' -E '/^  sdk:/!s/^(  [a-zA-Z_][a-zA-Z0-9_]*): "[^"]*"/\1: any/' "$pubspec_file"
+    fi
 }
 
 # Apply resolved versions to pubspec (restore backup first, then apply versions)
@@ -124,10 +141,16 @@ apply_resolved_versions() {
             if grep -q "^  $package:" "$pubspec_file"; then
                 local next_line=$(grep -A1 "^  $package:" "$pubspec_file" | tail -n1)
                 if [[ ! "$next_line" =~ (git:|path:|sdk:) ]]; then
-                    # Update the package version
-                    if sed -i '' -E "s/^(  $package:).*/\1 ^$version/" "$pubspec_file"; then
-                        ((updated_count++))
-                        print_success "  📝 $package: ^$version"
+                    # Check if KEEP_PINNED is enabled and this package has a pinned version
+                    local current_line=$(grep "^  $package:" "$pubspec_file")
+                    if [[ "${KEEP_PINNED:-false}" == "true" ]] && [[ "$current_line" =~ ^[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*:[[:space:]]+[0-9] ]]; then
+                        print_info "  📌 $package: preserved pinned version ($(echo "$current_line" | awk '{print $2}'))"
+                    else
+                        # Update the package version
+                        if sed -i '' -E "s/^(  $package:).*/\1 ^$version/" "$pubspec_file"; then
+                            ((updated_count++))
+                            print_success "  📝 $package: ^$version"
+                        fi
                     fi
                 fi
             fi

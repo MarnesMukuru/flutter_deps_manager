@@ -49,6 +49,7 @@ tar -xzf flutter-deps-upgrade-1.0.3.tar.gz && cd flutter-deps-upgrade-1.0.3
 ```bash
 flutter-deps-upgrade upgrade my_app --validate    # Upgrade specific project with build validation
 flutter-deps-upgrade upgrade --all                # Upgrade all projects
+flutter-deps-upgrade upgrade my_app --keep-pinned # Upgrade but preserve exact version pins
 flutter-deps-upgrade analyze my_package           # Preview changes (dry-run)
 flutter-deps-upgrade --help                       # See all options
 ```
@@ -62,7 +63,8 @@ flutter-deps-upgrade --help                       # See all options
 
 Upgrades your Flutter dependencies to the **latest compatible versions** that actually work together.
 
-### Before:
+### Normal Upgrade:
+#### Before:
 ```yaml
 dependencies:
   logger: 1.4.0           # Old version
@@ -70,10 +72,27 @@ dependencies:
   camera: any             # Unresolved
 ```
 
-### After:
+#### After:
 ```yaml
 dependencies:
   logger: ^2.6.1          # Latest compatible!
+  get_it: ^8.2.0          # Latest compatible!
+  camera: ^0.11.2         # Properly resolved!
+```
+
+### With `--keep-pinned` Flag:
+#### Before:
+```yaml
+dependencies:
+  logger: 1.4.0           # Exact version (pinned)
+  get_it: ^7.7.0          # Caret constraint
+  camera: any             # Unresolved
+```
+
+#### After:
+```yaml
+dependencies:
+  logger: 1.4.0           # PRESERVED (exact version kept)
   get_it: ^8.2.0          # Latest compatible!
   camera: ^0.11.2         # Properly resolved!
 ```
@@ -93,6 +112,7 @@ You can target **any folder** with a `pubspec.yaml`:
 ✅ **Smart Validation** - Explains why "X packages have newer versions" warnings are safe to ignore  
 ✅ **Build Validation** - Runs actual builds and shows comprehensive results  
 ✅ **Safety First** - Automatic backups before changes  
+✅ **Version Pinning** - Preserve exact versions while upgrading others (`--keep-pinned`)  
 ✅ **Professional Output** - Clear progress and results  
 
 ## 🚀 Commands
@@ -107,12 +127,20 @@ flutter-deps-upgrade upgrade --all            # Upgrade all projects
 # With comprehensive build validation
 flutter-deps-upgrade upgrade my_app --validate # Runs flutter clean, build_runner, etc.
 
+# Preserve exact version pins while upgrading others
+flutter-deps-upgrade upgrade my_app --keep-pinned # Keep packages like "package: 1.2.3" pinned
+flutter-deps-upgrade upgrade --all --keep-pinned  # Keep pinned versions across all projects
+
 # Preview changes (no modifications)
 flutter-deps-upgrade analyze my_app           # See what would be upgraded
 flutter-deps-upgrade analyze packages/core    # Preview specific package
+flutter-deps-upgrade analyze my_app --keep-pinned # Preview with pinned versions preserved
 
 # Interactive mode
 flutter-deps-upgrade upgrade                  # Choose from menu
+
+# Combine flags
+flutter-deps-upgrade upgrade my_app --keep-pinned --validate # Keep pins + full validation
 
 # Help
 flutter-deps-upgrade --help                   # See all options
@@ -127,12 +155,65 @@ flutter-deps-upgrade --help                   # See all options
 - Automatic rollback if failures occur
 - Skips git/path dependencies (preserves local packages)
 
+## 📌 Version Pinning Control
+
+The `--keep-pinned` flag gives you precise control over which packages get upgraded:
+
+### When to Use `--keep-pinned`:
+- **Testing specific versions** - Keep a package at a known working version
+- **Legacy compatibility** - Some packages must stay at exact versions
+- **Gradual upgrades** - Upgrade most packages but keep critical ones stable
+- **Production stability** - Upgrade dev dependencies but keep core ones pinned
+
+### How It Works:
+| Package Format | Without `--keep-pinned` | With `--keep-pinned` |
+|---------------|------------------------|----------------------|
+| `package: 1.2.3` | ➡️ `package: ^2.0.0` | ✅ `package: 1.2.3` (preserved) |
+| `package: ^1.2.3` | ➡️ `package: ^2.0.0` | ➡️ `package: ^2.0.0` (upgraded) |
+| `package: any` | ➡️ `package: ^2.0.0` | ➡️ `package: ^2.0.0` (upgraded) |
+
+### Examples:
+```bash
+# Keep specific versions pinned, upgrade everything else
+flutter-deps-upgrade upgrade my_app --keep-pinned
+
+# Preview what would be preserved vs upgraded  
+flutter-deps-upgrade analyze my_app --keep-pinned
+
+# Use with validation to ensure pinned versions still work
+flutter-deps-upgrade upgrade my_app --keep-pinned --validate
+```
+
 ## 📋 Example Output
 
+### Normal Upgrade:
 ```
 🚀 Upgrading Dependencies
 ✅ Upgrade completed successfully!
+  📝 Updated 23 packages
 
+💡 PROFESSIONAL ASSESSMENT:
+  ✅ SUCCESSFUL UPGRADE: Your dependency upgrade completed successfully!
+  ▶️  NEXT STEPS: Your project is ready for development and production use
+```
+
+### With `--keep-pinned` Flag:
+```
+🚀 Upgrading Dependencies
+📌 KEEP_PINNED mode: Preserving exact version pins
+✅ Preserved 3 pinned version(s)
+  📌 hive: 2.2.3 (preserved)
+  📌 logger: 1.4.0 (preserved)
+  📝 http: ^1.5.0 (upgraded)
+  📝 uuid: ^4.5.1 (upgraded)
+
+💡 PROFESSIONAL ASSESSMENT:
+  ✅ SUCCESSFUL UPGRADE: Dependencies upgraded while preserving pinned versions!
+  ▶️  NEXT STEPS: Your project is ready for development and production use
+```
+
+### With `--validate` Flag:
+```
 📋 DETAILED BUILD VALIDATION RESULTS:
 ✅ Build Performance Summary:
   • Total build time: 33.7s
@@ -143,10 +224,6 @@ flutter-deps-upgrade --help                   # See all options
 ⚠️  DETAILED WARNING ANALYSIS (Safe to ignore):
   • 38 packages have newer versions - CLI found the best compatible versions
   • Analyzer version mismatch - Expected and safe
-
-💡 PROFESSIONAL ASSESSMENT:
-  ✅ SUCCESSFUL UPGRADE: Your dependency upgrade completed successfully!
-  ▶️  NEXT STEPS: Your project is ready for development and production use
 ```
 
 ## 🔧 Installation & Management

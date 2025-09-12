@@ -45,6 +45,7 @@ QUIET=false
 CONFIG_FILE=""
 VALIDATE_BUILD=false
 VALIDATE_QUICK=true
+KEEP_PINNED=false
 
 # Load the core functionality
 source "${SCRIPT_DIR}/core-functions.sh" 2>/dev/null || {
@@ -81,6 +82,7 @@ ${BOLD}OPTIONS:${NC}
     -v, --verbose           Verbose output
     -q, --quiet             Quiet output (errors only)
     -c, --config FILE       Load configuration from file
+    --keep-pinned           Keep packages with exact versions pinned (don't upgrade)
     --validate              Run full build validation after upgrade
     --no-validate           Skip post-upgrade validation
     --version               Show version information
@@ -92,6 +94,7 @@ ${BOLD}EXAMPLES:${NC}
     ${SCRIPT_NAME} upgrade packages/core      # Upgrade specific project
     ${SCRIPT_NAME} upgrade --all --verbose    # Upgrade all projects with verbose output
     ${SCRIPT_NAME} upgrade app --validate     # Upgrade with full build validation
+    ${SCRIPT_NAME} upgrade app --keep-pinned  # Upgrade but keep exact versions pinned
 
 ${BOLD}DETECTION:${NC}
     🔍 ${BOLD}MONOREPO${NC} (has path dependencies) → Unified resolution strategy
@@ -193,6 +196,10 @@ parse_arguments() {
                 ALL_PROJECTS=true
                 shift
                 ;;
+            --keep-pinned)
+                KEEP_PINNED=true
+                shift
+                ;;
             --validate)
                 VALIDATE_BUILD=true
                 VALIDATE_QUICK=true
@@ -228,7 +235,7 @@ parse_arguments() {
     fi
     
     # Export validation flags for core functions
-    export VALIDATE_BUILD VALIDATE_QUICK
+    export VALIDATE_BUILD VALIDATE_QUICK KEEP_PINNED
     
     # Override core functions with CLI integration
     override_core_functions
