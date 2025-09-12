@@ -1,0 +1,40 @@
+name: document_uploader
+description: Plugin for upload documents asynchronously
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  camera: ^0.11.0+2
+  image: ^4.3.0
+  uuid: any
+  logger: 1.4.0
+  get_it: ^7.7.0
+  hive: 2.2.3
+  json_annotation: ^4.9.0
+  collection: ^1.16.0
+  geolocator:
+    git:
+      url: https://github.com/eb-so/flutter-geolocator
+      ref: main
+      path: geolocator
+  path_provider: ^2.1.5
+  crypto: ^3.0.6
+  http: ^1.2.2
+  core:
+    path: ../core/
+  meta: ^1.9.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  json_serializable: ^6.8.0
+  flutter_lints: ^5.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+  mockito: 5.4.4
+

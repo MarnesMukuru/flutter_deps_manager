@@ -569,7 +569,36 @@ validate_build_health() {
         flutter pub get 2>&1
         echo ""
         
-        # Step 3: Determine build strategy based on project structure
+        # Step 3: Pre-build Analysis Check
+        echo "=== PRE-BUILD ANALYSIS ==="
+        echo "Checking for compilation errors before expensive builds..."
+        local analysis_output=$(flutter analyze 2>&1)
+        local analysis_exit_code=$?
+        
+        echo "$analysis_output"
+        echo ""
+        
+        # Check if analysis found critical errors
+        if [[ $analysis_exit_code -ne 0 ]] && echo "$analysis_output" | grep -q "error •\|Error:"; then
+            echo "❌ CRITICAL ANALYSIS ERRORS DETECTED"
+            echo "⚠️  Build validation skipped - fix analysis errors first:"
+            echo "$analysis_output" | grep -E "error •|Error:" | head -5
+            echo ""
+            echo "🔧 Recommended actions:"
+            echo "   1. Fix the compilation errors shown above"
+            echo "   2. Update incompatible packages to newer versions"
+            echo "   3. Re-run with --validate after fixing errors"
+            echo ""
+            echo "$project_name validation stopped due to errors ----------"
+            return 1
+        elif [[ $analysis_exit_code -ne 0 ]]; then
+            echo "⚠️  Analysis completed with warnings (non-critical)"
+        else
+            echo "✅ Analysis passed - proceeding with build validation"
+        fi
+        echo ""
+        
+        # Step 4: Determine build strategy based on project structure
         local has_build_runner=false
         local has_build_yaml=false
         local generators_found=""
@@ -597,7 +626,7 @@ validate_build_health() {
         fi
         echo ""
         
-        # Step 4: Execute appropriate build strategy
+        # Step 5: Execute appropriate build strategy
         if [[ "$has_build_runner" == "true" ]] || [[ "$has_build_yaml" == "true" ]] || [[ -n "$generators_found" ]]; then
             echo "=== CODE GENERATION BUILD ==="
             echo "Running build_runner with code generation..."
@@ -620,7 +649,7 @@ validate_build_health() {
         
         echo ""
         
-        # Step 5: Final health check
+        # Step 6: Final health check
         echo "=== BUILD HEALTH CHECK ==="
         echo "Checking for common build artifacts..."
         
@@ -649,6 +678,30 @@ validate_build_health() {
 categorize_validation_results() {
     local validation_output="$1"
     local has_critical_issues="$2"
+    
+    # Check if validation was stopped due to analysis errors
+    if echo "$validation_output" | grep -q "validation stopped due to errors"; then
+        echo -e "\n${RED}❌ Build validation stopped due to analysis errors${NC}"
+        echo -e "\n${BLUE}📋 ANALYSIS ERROR SUMMARY:${NC}"
+        
+        local error_count=$(echo "$validation_output" | grep -c "error •\|Error:" || echo "0")
+        local warning_count=$(echo "$validation_output" | grep -c "warning •\|Warning:" || echo "0")
+        
+        echo -e "  ${RED}•${NC} Critical errors found: $error_count"
+        echo -e "  ${YELLOW}•${NC} Warnings found: $warning_count"
+        echo ""
+        echo -e "${YELLOW}🔧 Next steps:${NC}"
+        echo -e "  1. Review the analysis errors shown above"
+        echo -e "  2. Update packages with compatibility issues"
+        echo -e "  3. Fix any deprecated API usage"
+        echo -e "  4. Re-run upgrade with --validate after fixes"
+        echo ""
+        echo -e "${BLUE}💡 Common fixes:${NC}"
+        echo -e "  • Update packages: ${CYAN}flutter pub upgrade${NC}"
+        echo -e "  • Check for newer versions: ${CYAN}flutter pub outdated${NC}"
+        echo -e "  • Review package changelogs for breaking changes"
+        return
+    fi
     
     echo -e "\n${GREEN}✅ Upgrade completed successfully!${NC}"
     echo -e "\n${BLUE}📋 DETAILED BUILD VALIDATION RESULTS:${NC}"
