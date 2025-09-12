@@ -501,11 +501,19 @@ validate_upgrade_results() {
     # Run build validation if requested
     if [ "$validate_build" = "true" ]; then
         local build_results=$(validate_build_health "$project_dir")
+        local validation_exit_code=$?
         validation_results="$validation_results\n$build_results"
         
-        # Check if build failed
-        if echo "$build_results" | grep -q "BUILD FAILED"; then
+        # Check if build failed or analysis errors detected
+        if echo "$build_results" | grep -q "BUILD FAILED\|validation stopped due to errors"; then
             has_issues=true
+        fi
+        
+        # If validation returned with analysis errors, exit early
+        if [ $validation_exit_code -ne 0 ]; then
+            print_error "Build validation failed due to analysis errors"
+            categorize_validation_results "$validation_results" "true"
+            return $validation_exit_code
         fi
     fi
     
@@ -579,15 +587,15 @@ validate_build_health() {
         echo ""
         
         # Check if analysis found critical errors
-        if [[ $analysis_exit_code -ne 0 ]] && echo "$analysis_output" | grep -q "error •\|Error:"; then
+        if [[ $analysis_exit_code -ne 0 ]] && echo "$analysis_output" | grep -q "error •"; then
             echo "❌ CRITICAL ANALYSIS ERRORS DETECTED"
             echo "⚠️  Build validation skipped - fix analysis errors first:"
-            echo "$analysis_output" | grep -E "error •|Error:" | head -5
+            echo "$analysis_output" | grep -E "error •" | head -5
             echo ""
             echo "🔧 Recommended actions:"
             echo "   1. Fix the compilation errors shown above"
-            echo "   2. Update incompatible packages to newer versions"
-            echo "   3. Re-run with --validate after fixing errors"
+            echo "   2. Check for deprecated API usage after package updates"
+            echo "   3. Re-run with --validate after fixing code errors"
             echo ""
             echo "$project_name validation stopped due to errors ----------"
             return 1
@@ -684,22 +692,22 @@ categorize_validation_results() {
         echo -e "\n${RED}❌ Build validation stopped due to analysis errors${NC}"
         echo -e "\n${BLUE}📋 ANALYSIS ERROR SUMMARY:${NC}"
         
-        local error_count=$(echo "$validation_output" | grep -c "error •\|Error:" || echo "0")
+        local error_count=$(echo "$validation_output" | grep -c "error •" || echo "0")
         local warning_count=$(echo "$validation_output" | grep -c "warning •\|Warning:" || echo "0")
         
         echo -e "  ${RED}•${NC} Critical errors found: $error_count"
         echo -e "  ${YELLOW}•${NC} Warnings found: $warning_count"
         echo ""
         echo -e "${YELLOW}🔧 Next steps:${NC}"
-        echo -e "  1. Review the analysis errors shown above"
-        echo -e "  2. Update packages with compatibility issues"
-        echo -e "  3. Fix any deprecated API usage"
-        echo -e "  4. Re-run upgrade with --validate after fixes"
+        echo -e "  1. Review the compilation errors shown above"
+        echo -e "  2. Fix undefined functions, classes, or imports"
+        echo -e "  3. Update code for deprecated APIs after package upgrades"
+        echo -e "  4. Re-run upgrade with --validate after fixing code"
         echo ""
         echo -e "${BLUE}💡 Common fixes:${NC}"
-        echo -e "  • Update packages: ${CYAN}flutter pub upgrade${NC}"
-        echo -e "  • Check for newer versions: ${CYAN}flutter pub outdated${NC}"
-        echo -e "  • Review package changelogs for breaking changes"
+        echo -e "  • Check package documentation for API changes"
+        echo -e "  • Update import statements for moved classes"
+        echo -e "  • Replace deprecated methods with new alternatives"
         return
     fi
     
