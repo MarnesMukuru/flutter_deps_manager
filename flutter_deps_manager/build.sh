@@ -7,7 +7,7 @@ set -euo pipefail
 
 # Build configuration
 CLI_NAME="flutter-deps-upgrade"
-VERSION="1.1.6"
+VERSION="1.1.7"
 BUILD_DIR="dist"
 PACKAGE_DIR="packages"
 ARCHIVE_DIR="archives"

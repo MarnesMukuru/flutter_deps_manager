@@ -37,9 +37,21 @@ detect_monorepo() {
     fi
 }
 
-# Find all pubspec.yaml files in current directory
+# Find all pubspec.yaml files in current directory (returns absolute paths)
 find_all_pubspecs() {
-    find . -name "pubspec.yaml" -not -path "./.dart_tool/*" -not -path "./build/*" | sort
+    local current_dir="$(pwd)"
+    local temp_file=$(mktemp)
+    
+    # Use find to get all pubspec files and convert to absolute paths
+    find . -name "pubspec.yaml" -not -path "./.dart_tool/*" -not -path "./build/*" -print0 | while IFS= read -r -d '' pubspec; do
+        # Convert relative path to absolute path
+        local abs_path="$(cd "$(dirname "$pubspec")" && pwd)/$(basename "$pubspec")"
+        echo "$abs_path"
+    done > "$temp_file"
+    
+    # Sort and output
+    sort "$temp_file"
+    rm -f "$temp_file"
 }
 
 # Get related pubspecs for unified resolution
@@ -456,8 +468,13 @@ upgrade_all_projects() {
     local success_count=0
     for pubspec in "${pubspecs[@]}"; do
         local project_dir=$(dirname "$pubspec")
+        # Ensure we have an absolute path
+        local abs_project_dir="$(cd "$project_dir" 2>/dev/null && pwd)" || {
+            print_error "Cannot access directory: $project_dir"
+            continue
+        }
         echo ""
-        if upgrade_all_dependencies "$project_dir"; then
+        if upgrade_all_dependencies "$abs_project_dir"; then
             ((success_count++))
         fi
     done
@@ -482,7 +499,10 @@ show_pubspec_menu() {
     for pubspec in "${pubspecs[@]}"; do
         local project_dir=$(dirname "$pubspec")
         local project_name=$(basename "$project_dir")
-        echo " $i) $project_name$(printf '%*s' $((20 - ${#project_name})) '')$pubspec"
+        # Display relative path for readability
+        local display_path="${pubspec#$(pwd)/}"
+        [[ "$display_path" == "$pubspec" ]] && display_path="./$display_path"
+        echo " $i) $project_name$(printf '%*s' $((20 - ${#project_name})) '')$display_path"
         ((i++))
     done
     
@@ -523,7 +543,12 @@ show_pubspec_menu() {
                 if [ "$choice" -ge 1 ] && [ "$choice" -le ${#pubspecs[@]} ]; then
                     local selected_pubspec="${pubspecs[$((choice-1))]}"
                     local project_dir=$(dirname "$selected_pubspec")
-                    upgrade_all_dependencies "$project_dir"
+                    # Ensure we have an absolute path
+                    local abs_project_dir="$(cd "$project_dir" 2>/dev/null && pwd)" || {
+                        print_error "Cannot access directory: $project_dir"
+                        return 1
+                    }
+                    upgrade_all_dependencies "$abs_project_dir"
                     return $?
                 else
                     print_error "Invalid number. Please choose between 1 and ${#pubspecs[@]}"

@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Version and metadata
-VERSION="1.1.6"
+VERSION="1.1.7"
 SCRIPT_NAME="flutter-deps-upgrade"
 # Determine the library directory
 if [[ -d "/usr/local/lib/flutter-deps-upgrade" ]]; then
