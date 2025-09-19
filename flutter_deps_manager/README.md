@@ -47,11 +47,12 @@ tar -xzf flutter-deps-upgrade-1.1.7.tar.gz && cd flutter-deps-upgrade-1.1.7
 
 ### Use Anywhere
 ```bash
-flutter-deps-upgrade upgrade my_app --validate    # Upgrade specific project with build validation
-flutter-deps-upgrade upgrade --all                # Upgrade all projects
-flutter-deps-upgrade upgrade my_app --keep-pinned # Upgrade but preserve exact version pins
-flutter-deps-upgrade analyze my_package           # Preview changes (dry-run)
-flutter-deps-upgrade --help                       # See all options
+flutter-deps-upgrade upgrade my_app --validate      # Upgrade specific project with build validation
+flutter-deps-upgrade upgrade --all                  # Upgrade all projects
+flutter-deps-upgrade upgrade my_app --keep-pinned   # Upgrade but preserve exact version pins
+flutter-deps-upgrade upgrade my_app --cleanup-backups # Upgrade and auto-delete backup files
+flutter-deps-upgrade analyze my_package             # Preview changes (dry-run)
+flutter-deps-upgrade --help                         # See all options
 ```
 
 **⚠️ Important for Monorepos:** 
@@ -112,6 +113,7 @@ You can target **any folder** with a `pubspec.yaml`:
 ✅ **Smart Validation** - Explains why "X packages have newer versions" warnings are safe to ignore  
 ✅ **Build Validation** - Runs actual builds and shows comprehensive results  
 ✅ **Safety First** - Automatic backups before changes  
+✅ **Backup Management** - Auto-cleanup backup files for git users (`--cleanup-backups`)  
 ✅ **Version Pinning** - Preserve exact versions while upgrading others (`--keep-pinned`)  
 ✅ **Professional Output** - Clear progress and results  
 
@@ -131,6 +133,10 @@ flutter-deps-upgrade upgrade my_app --validate # Runs flutter clean, build_runne
 flutter-deps-upgrade upgrade my_app --keep-pinned # Keep packages like "package: 1.2.3" pinned
 flutter-deps-upgrade upgrade --all --keep-pinned  # Keep pinned versions across all projects
 
+# Clean up backup files (perfect for git users)
+flutter-deps-upgrade upgrade my_app --cleanup-backups # Auto-delete backup files after success
+flutter-deps-upgrade upgrade --all --cleanup-backups  # Clean up backups across all projects
+
 # Preview changes (no modifications)
 flutter-deps-upgrade analyze my_app           # See what would be upgraded
 flutter-deps-upgrade analyze packages/core    # Preview specific package
@@ -141,6 +147,8 @@ flutter-deps-upgrade upgrade                  # Choose from menu
 
 # Combine flags
 flutter-deps-upgrade upgrade my_app --keep-pinned --validate # Keep pins + full validation
+flutter-deps-upgrade upgrade my_app --cleanup-backups --validate # Clean up backups + validation
+flutter-deps-upgrade upgrade my_app --keep-pinned --cleanup-backups # Keep pins + clean backups
 
 # Help
 flutter-deps-upgrade --help                   # See all options
@@ -154,6 +162,38 @@ flutter-deps-upgrade --help                   # See all options
 - Dry-run mode to preview changes
 - Automatic rollback if failures occur
 - Skips git/path dependencies (preserves local packages)
+
+## 🗑️ Backup Management
+
+The `--cleanup-backups` flag helps manage backup files created during upgrades:
+
+### When to Use `--cleanup-backups`:
+- **Git users** - Backup files are redundant when you have version control
+- **Clean workspace** - Keep directories tidy after upgrades
+- **CI/CD pipelines** - Avoid accumulating backup files in automated builds
+- **Production deploys** - Clean up temporary files automatically
+
+### How It Works:
+```bash
+# Without --cleanup-backups (default)
+flutter-deps-upgrade upgrade my_app
+# → Creates: pubspec.yaml.backup.1234567890
+# → Asks: "Delete backup files after successful upgrade? [y/N]"
+
+# With --cleanup-backups (automatic)  
+flutter-deps-upgrade upgrade my_app --cleanup-backups
+# → Creates backups → Upgrades → Auto-deletes backups ✅
+
+# Quiet mode (no prompting)
+flutter-deps-upgrade upgrade my_app --quiet
+# → Never asks about cleanup (keeps backups safe)
+```
+
+### Safety Features:
+- ✅ **Only cleans after successful upgrades** - backups preserved if upgrade fails
+- ✅ **Interactive confirmation** - asks before cleanup (unless using `--cleanup-backups`)
+- ✅ **Safe default** - keeps backups unless explicitly requested to clean
+- ✅ **Rollback protection** - backups remain available during upgrade process
 
 ## 📌 Version Pinning Control
 
@@ -212,6 +252,25 @@ flutter-deps-upgrade upgrade my_app --keep-pinned --validate
   ▶️  NEXT STEPS: Your project is ready for development and production use
 ```
 
+### With Interactive Backup Cleanup:
+```
+🚀 Upgrading Dependencies
+✅ Upgrade completed successfully!
+  📝 Updated 23 packages
+
+💾 Backup files were created during the upgrade process.
+   These are useful for rollback but may not be needed if you use git.
+
+[QUESTION] Delete backup files after successful upgrade? [y/N]: y
+🗑️  Removed backup: pubspec.yaml.backup.1234567890
+🗑️  Removed backup: pubspec.yaml.backup.1234567891
+✅ Cleaned up 2 backup file(s)
+
+💡 PROFESSIONAL ASSESSMENT:
+  ✅ SUCCESSFUL UPGRADE: Your dependency upgrade completed successfully!
+  ▶️  NEXT STEPS: Your project is ready for development and production use
+```
+
 ### With `--validate` Flag:
 ```
 📋 DETAILED BUILD VALIDATION RESULTS:
@@ -247,9 +306,15 @@ which flutter-deps-upgrade
 
 ### Update to Latest Version
 ```bash
-# Re-run the installer - it will update automatically
+# Re-run the installer - it will automatically upgrade your existing installation
 curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.7/install.sh | bash
 ```
+
+**🔄 Smart Update Process:**
+- ✅ **Auto-detects existing installation** - no manual uninstall needed
+- ✅ **Seamless upgrades** - v1.1.6 → v1.1.7 automatically 
+- ✅ **Preserves your settings** - installation directory and PATH remain unchanged
+- ✅ **Works every time** - same command for fresh install or upgrade
 
 ### Uninstall
 ```bash
