@@ -7,7 +7,7 @@ set -euo pipefail
 
 # Build configuration
 CLI_NAME="flutter-deps-upgrade"
-VERSION="1.1.7"
+VERSION=$(cat VERSION 2>/dev/null || echo "1.1.7")
 BUILD_DIR="dist"
 PACKAGE_DIR="packages"
 ARCHIVE_DIR="archives"
@@ -64,18 +64,10 @@ ${BOLD}EXAMPLES:${NC}
 EOF
 }
 
-# Detect version from source files
-detect_version() {
-    local version_from_install=$(grep '^VERSION=' install-cli.sh | cut -d'"' -f2 2>/dev/null || echo "")
-    local version_from_cli=$(grep '^VERSION=' flutter-deps-upgrade | cut -d'"' -f2 2>/dev/null || echo "")
-    
-    if [[ -n "$version_from_install" ]]; then
-        VERSION="$version_from_install"
-    elif [[ -n "$version_from_cli" ]]; then
-        VERSION="$version_from_cli"
-    fi
-    
-    print_info "Detected version: $VERSION"
+# Version info
+show_version_info() {
+    print_info "Building version: $VERSION"
+    print_info "Project: $CLI_NAME"
 }
 
 # Clean build directory
@@ -107,6 +99,7 @@ prepare_source() {
     cp flutter-deps-upgrade "$target_dir/"
     cp core-functions.sh "$target_dir/"
     cp install-cli.sh "$target_dir/"
+    cp VERSION "$target_dir/"
     cp README.md "$target_dir/"
     
     # Make executable
@@ -498,7 +491,7 @@ main() {
     if [[ -n "$custom_version" ]]; then
         VERSION="$custom_version"
     else
-        detect_version
+        show_version_info
     fi
     
     # Override output directory if specified

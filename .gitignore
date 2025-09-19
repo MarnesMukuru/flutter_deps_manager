@@ -42,3 +42,6 @@ app.*.map.json
 # Test scenarios and temporary files
 test_scenarios/
 empty_test_dir/
+
+# Build artifacts
+flutter_deps_manager/dist/
