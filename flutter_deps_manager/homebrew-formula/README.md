@@ -35,17 +35,17 @@ brew upgrade flutter-deps-upgrade
 
 1. **Update the version and URL** in the formula:
 ```ruby
-version "1.1.0"
-url "https://github.com/marnesfourie/flutter_deps_manager_project/releases/download/v1.1.0/flutter-deps-upgrade-1.1.0.tar.gz"
+version "1.1.6"
+url "https://github.com/marnesfourie/flutter_deps_manager_project/releases/download/v1.1.6/flutter-deps-upgrade-1.1.6.tar.gz"
 ```
 
 2. **Calculate and update the SHA256**:
 ```bash
 # Download the release archive
-curl -fsSL "https://github.com/marnesfourie/flutter_deps_manager_project/releases/download/v1.1.0/flutter-deps-upgrade-1.1.0.tar.gz" -o flutter-deps-upgrade-1.1.0.tar.gz
+curl -fsSL "https://github.com/marnesfourie/flutter_deps_manager_project/releases/download/v1.1.6/flutter-deps-upgrade-1.1.6.tar.gz" -o flutter-deps-upgrade-1.1.6.tar.gz
 
 # Calculate SHA256
-shasum -a 256 flutter-deps-upgrade-1.1.0.tar.gz
+shasum -a 256 flutter-deps-upgrade-1.1.6.tar.gz
 
 # Update the formula
 sha256 "abc123...your-sha256-here"

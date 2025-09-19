@@ -1,10 +1,10 @@
 class FlutterDepsUpgrade < Formula
   desc "Intelligent Flutter dependency upgrader with automatic monorepo detection"
   homepage "https://github.com/marnesfourie/flutter_deps_manager_project"
-  url "https://github.com/marnesfourie/flutter_deps_manager_project/releases/download/v1.0.0/flutter-deps-upgrade-1.0.0.tar.gz"
+  url "https://github.com/marnesfourie/flutter_deps_manager_project/releases/download/v1.1.6/flutter-deps-upgrade-1.1.6.tar.gz"
   sha256 ""  # This will need to be updated with the actual SHA256 from the release
   license "MIT"  # Update with your actual license
-  version "1.0.0"
+  version "1.1.6"
   
   depends_on "flutter" => :recommended
   uses_from_macos "curl"
