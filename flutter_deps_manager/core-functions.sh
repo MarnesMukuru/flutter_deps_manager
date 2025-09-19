@@ -3,7 +3,7 @@
 # Core Flutter Dependencies Upgrade Functions
 # Contains the core logic without CLI interface
 
-echo "MARNES DEBUG: core-functions.sh loaded" >&2
+# Debug line removed for production
 
 # Colors for output (can be overridden)
 RED=${RED:-'\033[0;31m'}
@@ -58,6 +58,7 @@ find_all_pubspecs() {
 # Get related pubspecs for unified resolution
 get_related_pubspecs() {
     local main_project_dir="$1"
+    local verbose="${2:-false}"  # Optional parameter to control printing
     local pubspec_file="$main_project_dir/pubspec.yaml"
     local related_pubspecs=("$pubspec_file")
     
@@ -71,7 +72,9 @@ get_related_pubspecs() {
             
             if [[ -f "$dep_pubspec" ]]; then
                 related_pubspecs+=("$dep_pubspec")
-                print_info "📦 Found path dependency: $path_dep" >&2
+                if [[ "$verbose" == "true" ]]; then
+                    print_info "📦 Found path dependency: $path_dep" >&2
+                fi
             fi
         fi
     done < <(grep -A1 "^  [a-zA-Z_]" "$pubspec_file" | grep "path:" | awk '{print $2}' | tr -d '"')
@@ -292,7 +295,7 @@ unified_upgrade_monorepo() {
     print_info "============================================"
     
     # Get all related pubspecs
-    local related_pubspecs=($(get_related_pubspecs "$main_project_dir"))
+    local related_pubspecs=($(get_related_pubspecs "$main_project_dir" "true"))
     print_info "📋 Will upgrade ${#related_pubspecs[@]} related packages together"
     
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -525,7 +528,7 @@ upgrade_all_dependencies() {
     
     print_info "🚀 Upgrading ALL dependencies in $project_name"
     print_info "============================================"
-    print_info "DEBUG_TEST: VALIDATE_BUILD is ${VALIDATE_BUILD:-NOT_SET}"
+    # Debug info removed for production
     
     if detect_monorepo "$project_dir"; then
         unified_upgrade_monorepo "$project_dir"
@@ -568,7 +571,7 @@ group_pubspecs_by_monorepo() {
         # Check if this is a monorepo
         if detect_monorepo "$abs_project_dir"; then
             # Get all related pubspecs for this monorepo
-            local related_pubspecs=($(get_related_pubspecs "$abs_project_dir"))
+            local related_pubspecs=($(get_related_pubspecs "$abs_project_dir" "false"))
             
             # Mark all related directories as processed
             for related_pubspec in "${related_pubspecs[@]}"; do
@@ -633,7 +636,7 @@ show_pubspec_menu() {
         
         # Check if it's a monorepo and show how many pubspecs it contains
         if detect_monorepo "$project_dir"; then
-            local related_pubspecs=($(get_related_pubspecs "$project_dir"))
+            local related_pubspecs=($(get_related_pubspecs "$project_dir" "false"))
             echo " $i) $project_name$(printf '%*s' $((20 - ${#project_name})) '')$display_path (MONOREPO: ${#related_pubspecs[@]} pubspecs)"
         else
             echo " $i) $project_name$(printf '%*s' $((20 - ${#project_name})) '')$display_path (STANDALONE)"
@@ -698,7 +701,7 @@ validate_upgrade_results() {
     local project_dir="$1"
     local validate_build="${2:-false}"
     
-    echo "VALIDATION DEBUG: validate_upgrade_results called with validate_build=$validate_build" >&2
+    # Debug info removed for production
     print_info "🔍 Running post-upgrade validation..."
     
     # Basic validation - check pubspec.yaml files
@@ -759,7 +762,7 @@ validate_build_health() {
     local temp_output=$(mktemp)
     local project_name=$(basename "$project_dir")
     
-    echo "VALIDATION DEBUG: validate_build_health called for $project_dir" >&2
+    # Debug info removed for production
     
     # Ensure we can access the directory
     if [[ ! -d "$project_dir" ]]; then
@@ -770,8 +773,7 @@ validate_build_health() {
     cd "$project_dir" || return 1
     
     print_info "⚙️  Running comprehensive build validation for $project_name..."
-    print_info "DEBUG: Working directory is: $(pwd)"
-    print_info "DEBUG: Project directory is: $project_dir"
+    # Debug working directory info removed for production
     
     # Pre-validation: Run analysis first to catch errors early
     echo "=== PRE-BUILD ANALYSIS ===" >> "$temp_output"
@@ -790,12 +792,8 @@ validate_build_health() {
     echo "$analysis_output" >> "$temp_output"
     echo "" >> "$temp_output"
     
-    # DEBUG: Add more visibility
-    echo "DEBUG: Analysis exit code: $analysis_exit_code" >> "$temp_output"
-    echo "DEBUG: Analysis output contains 'error •'?: $(echo "$analysis_output" | grep -q "error •" && echo "YES" || echo "NO")" >> "$temp_output"
-    echo "DEBUG: Full analysis output:" >> "$temp_output"
+    # Include analysis output for validation
     echo "$analysis_output" >> "$temp_output"
-    echo "DEBUG: End of analysis output" >> "$temp_output"
     
     # Check if analysis found critical errors - if so, stop immediately
     if [[ $analysis_exit_code -ne 0 ]] && echo "$analysis_output" | grep -q "error •"; then
@@ -961,7 +959,7 @@ categorize_validation_results() {
         echo -e "  ${RED}•${NC} Critical errors found: $error_count"
         echo -e "  ${YELLOW}•${NC} Warnings found: $warning_count"
         
-        # Show the actual errors to help with debugging
+        # Show error details for troubleshooting
         echo -e "\n${RED}🔍 Error Details:${NC}"
         echo "$validation_output" | grep -E "error •" | head -5 | sed 's/^/  /'
         
@@ -1064,7 +1062,7 @@ categorize_validation_results() {
     fi
     
     # Outdated packages
-    local outdated_count=$(echo "$validation_output" | grep -o '[0-9]\+ packages have newer versions' | grep -o '[0-9]\+' || echo "0")
+    local outdated_count=$(echo "$validation_output" | grep -o '[0-9]\+ packages have newer versions' | head -1 | grep -o '[0-9]\+' || echo "0")
     if [ "$outdated_count" != "0" ]; then
         echo -e "  ${YELLOW}•${NC} $outdated_count packages have newer versions - CLI found the best compatible versions"
     fi

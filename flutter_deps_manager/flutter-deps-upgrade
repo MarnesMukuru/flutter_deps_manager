@@ -343,7 +343,24 @@ override_core_functions() {
 # Main execution
 main() {
     # Check if we're in a Flutter project
-    if [[ ! -f "pubspec.yaml" && ! -d "packages" && ! -f "*/pubspec.yaml" ]]; then
+    local has_projects=false
+    
+    # Check for pubspec.yaml in current directory
+    if [[ -f "pubspec.yaml" ]]; then
+        has_projects=true
+    fi
+    
+    # Check for packages directory (monorepo)
+    if [[ -d "packages" ]]; then
+        has_projects=true
+    fi
+    
+    # Check for any pubspec.yaml in subdirectories
+    if find . -maxdepth 2 -name "pubspec.yaml" -not -path "./.dart_tool/*" -not -path "./build/*" | head -1 | grep -q .; then
+        has_projects=true
+    fi
+    
+    if [[ "$has_projects" == "false" ]]; then
         print_warning "No Flutter projects detected in current directory"
         print_info "Run this command from a Flutter project root or monorepo root"
     fi
