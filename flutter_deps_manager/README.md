@@ -6,7 +6,7 @@
 
 ### 🚀 One-Line Install (Smart Auto-Detection)
 ```bash
-curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.7/install.sh | bash
+curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.8/install.sh | bash
 ```
 
 **The installer automatically:**
@@ -39,14 +39,14 @@ curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/downloa
 ### 🔄 Alternative Methods
 ```bash
 # Force user installation (no sudo)
-FLUTTER_DEPS_INSTALL_DIR=~/.local curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.7/install.sh | bash
+FLUTTER_DEPS_INSTALL_DIR=~/.local curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.8/install.sh | bash
 
 # Using wget
-wget -qO- https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.7/install.sh | bash
+wget -qO- https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.8/install.sh | bash
 
 # Manual download
-wget https://github.com/MarnesMukuru/flutter_deps_manager/releases/latest/download/flutter-deps-upgrade-1.1.7.tar.gz
-tar -xzf flutter-deps-upgrade-1.1.7.tar.gz && cd flutter-deps-upgrade-1.1.7
+wget https://github.com/MarnesMukuru/flutter_deps_manager/releases/latest/download/flutter-deps-upgrade-1.1.8.tar.gz
+tar -xzf flutter-deps-upgrade-1.1.8.tar.gz && cd flutter-deps-upgrade-1.1.8
 ./install-cli.sh global  # System-wide
 ./install-cli.sh global --prefix ~/.local  # User-only
 ```
@@ -313,7 +313,7 @@ which flutter-deps-upgrade
 ### Update to Latest Version
 ```bash
 # Same command as initial install - automatically upgrades existing installation
-curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.7/install.sh | bash
+curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.8/install.sh | bash
 ```
 
 ### Uninstall
@@ -347,7 +347,7 @@ rm -rf ~/.local/lib/flutter-deps-upgrade
 which flutter-deps-upgrade
 
 # If system-wide install failed, force user install
-FLUTTER_DEPS_INSTALL_DIR=~/.local curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.7/install.sh | bash
+FLUTTER_DEPS_INSTALL_DIR=~/.local curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.8/install.sh | bash
 
 # Manually add to PATH (if needed)
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
@@ -363,7 +363,7 @@ source ~/.zshrc
 
 Find all versions and download archives manually:
 - **Releases**: [https://github.com/MarnesMukuru/flutter_deps_manager/releases](https://github.com/MarnesMukuru/flutter_deps_manager/releases)
-- **Latest**: [Download tar.gz](https://github.com/MarnesMukuru/flutter_deps_manager/releases/latest/download/flutter-deps-upgrade-1.1.7.tar.gz)
+- **Latest**: [Download tar.gz](https://github.com/MarnesMukuru/flutter_deps_manager/releases/latest/download/flutter-deps-upgrade-1.1.8.tar.gz)
 - **Checksums**: Verify integrity with provided SHA256 checksums
 
 ---
