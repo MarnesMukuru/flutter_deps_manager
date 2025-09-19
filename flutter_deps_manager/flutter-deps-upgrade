@@ -46,6 +46,7 @@ CONFIG_FILE=""
 VALIDATE_BUILD=false
 VALIDATE_QUICK=true
 KEEP_PINNED=false
+CLEANUP_BACKUPS=false
 
 # Load the core functionality
 source "${SCRIPT_DIR}/core-functions.sh" 2>/dev/null || {
@@ -85,6 +86,7 @@ ${BOLD}OPTIONS:${NC}
     --keep-pinned           Keep packages with exact versions pinned (don't upgrade)
     --validate              Run full build validation after upgrade
     --no-validate           Skip post-upgrade validation
+    --cleanup-backups       Delete backup files after successful completion
     --version               Show version information
 
 ${BOLD}EXAMPLES:${NC}
@@ -95,6 +97,7 @@ ${BOLD}EXAMPLES:${NC}
     ${SCRIPT_NAME} upgrade --all --verbose    # Upgrade all projects with verbose output
     ${SCRIPT_NAME} upgrade app --validate     # Upgrade with full build validation
     ${SCRIPT_NAME} upgrade app --keep-pinned  # Upgrade but keep exact versions pinned
+    ${SCRIPT_NAME} upgrade app --cleanup-backups  # Upgrade and auto-delete backup files
 
 ${BOLD}DETECTION:${NC}
     🔍 ${BOLD}MONOREPO${NC} (has path dependencies) → Unified resolution strategy
@@ -208,6 +211,10 @@ parse_arguments() {
             --no-validate)
                 VALIDATE_BUILD=false
                 VALIDATE_QUICK=false
+                shift
+                ;;
+            --cleanup-backups)
+                CLEANUP_BACKUPS=true
                 shift
                 ;;
             --version)

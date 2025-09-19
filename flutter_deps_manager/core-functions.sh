@@ -101,6 +101,61 @@ create_backup() {
     fi
 }
 
+# Clean up backup files in a directory
+cleanup_backup_files() {
+    local target_dir="$1"
+    local backup_count=0
+    
+    if [[ -d "$target_dir" ]]; then
+        # Find and remove all pubspec backup files
+        while IFS= read -r -d '' backup_file; do
+            if [[ -f "$backup_file" ]]; then
+                rm -f "$backup_file"
+                print_info "🗑️  Removed backup: $(basename "$backup_file")"
+                ((backup_count++))
+            fi
+        done < <(find "$target_dir" -name "pubspec.yaml.backup.*" -type f -print0 2>/dev/null)
+        
+        if [[ $backup_count -gt 0 ]]; then
+            print_success "✅ Cleaned up $backup_count backup file(s)"
+        fi
+    fi
+}
+
+# Ask user about backup cleanup (interactive mode)
+ask_cleanup_backups() {
+    if [[ "${CLEANUP_BACKUPS:-false}" == "true" ]]; then
+        return 0  # Already set via command line
+    fi
+    
+    if [[ "${QUIET:-false}" == "true" ]]; then
+        return 1  # Don't ask in quiet mode
+    fi
+    
+    print_info ""
+    print_info "💾 Backup files were created during the upgrade process."
+    print_info "   These are useful for rollback but may not be needed if you use git."
+    print_info ""
+    
+    while true; do
+        printf "${BLUE}[QUESTION]${NC} Delete backup files after successful upgrade? [y/N]: "
+        read -r response
+        case "$response" in
+            [Yy]|[Yy][Ee][Ss])
+                CLEANUP_BACKUPS=true
+                return 0
+                ;;
+            [Nn]|[Nn][Oo]|"")
+                CLEANUP_BACKUPS=false
+                return 1
+                ;;
+            *)
+                print_warning "Please answer yes (y) or no (n)"
+                ;;
+        esac
+    done
+}
+
 # Set all dependencies to 'any' using the reliable sed approach
 set_dependencies_to_any() {
     local pubspec_file="$1"
@@ -356,6 +411,18 @@ unified_upgrade_monorepo() {
         done
         return 1
     fi
+    
+    # Ask about cleanup if interactive and not already set
+    if [[ "$DRY_RUN" != "true" ]]; then
+        ask_cleanup_backups
+        if [[ "${CLEANUP_BACKUPS:-false}" == "true" ]]; then
+            # Clean up backup files from all related project directories
+            for pubspec in "${related_pubspecs[@]}"; do
+                local project_dir=$(dirname "$pubspec")
+                cleanup_backup_files "$project_dir"
+            done
+        fi
+    fi
 }
 
 # Individual upgrade for standalone projects
@@ -437,6 +504,14 @@ individual_upgrade_standalone() {
             cp "$backup_file" "$pubspec_file"
         fi
         return 1
+    fi
+    
+    # Ask about cleanup if interactive and not already set
+    if [[ "$DRY_RUN" != "true" ]]; then
+        ask_cleanup_backups
+        if [[ "${CLEANUP_BACKUPS:-false}" == "true" ]]; then
+            cleanup_backup_files "$project_dir"
+        fi
     fi
 }
 
