@@ -228,12 +228,21 @@ main() {
     cd "$extracted_dir"
     
     if [[ -f "install-cli.sh" ]]; then
+        # Check if already installed and use update instead of global install
+        local cli_path="$install_dir/bin/$CLI_NAME"
+        local install_command="global"
+        
+        if [[ -f "$cli_path" ]]; then
+            print_info "🔄 Existing installation detected - upgrading..."
+            install_command="update"
+        fi
+        
         if [[ "$install_dir" == "/usr/local" ]] && [[ ! -w "/usr/local/bin" ]] && [[ "$EUID" -ne 0 ]]; then
             # Need sudo for system installation
-            sudo ./install-cli.sh global --prefix "$install_dir" "$@"
+            sudo ./install-cli.sh $install_command --prefix "$install_dir" "$@"
         else
             # Direct installation (user dir or already have permissions)
-            ./install-cli.sh global --prefix "$install_dir" "$@"
+            ./install-cli.sh $install_command --prefix "$install_dir" "$@"
         fi
     else
         print_error "Installation script not found in package"
