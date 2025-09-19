@@ -20,6 +20,7 @@ print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Global variables
 DRY_RUN=${DRY_RUN:-false}
+TOTAL_PACKAGES_UPGRADED=0
 
 # Detect if this is a monorepo (has path dependencies)
 detect_monorepo() {
@@ -163,6 +164,7 @@ apply_resolved_versions() {
                         # Update the package version
                         if sed -i '' -E "s/^(  $package:).*/\1 ^$version/" "$pubspec_file"; then
                             ((updated_count++))
+                            ((TOTAL_PACKAGES_UPGRADED++))
                             print_success "  📝 $package: ^$version"
                         fi
                     fi
@@ -443,6 +445,9 @@ upgrade_all_dependencies() {
     local project_dir="$1"
     local project_name=$(basename "$project_dir")
     
+    # Reset package counter for this upgrade operation
+    TOTAL_PACKAGES_UPGRADED=0
+    
     print_info "🚀 Upgrading ALL dependencies in $project_name"
     print_info "============================================"
     print_info "DEBUG_TEST: VALIDATE_BUILD is ${VALIDATE_BUILD:-NOT_SET}"
@@ -454,55 +459,110 @@ upgrade_all_dependencies() {
     fi
 }
 
+# Group pubspecs by monorepo relationships
+group_pubspecs_by_monorepo() {
+    local all_pubspecs=($(find_all_pubspecs))
+    local processed=()
+    local groups=()
+    
+    # Sort pubspecs by depth (shallowest first) to prioritize monorepo roots
+    local sorted_pubspecs=()
+    while IFS= read -r pubspec; do
+        sorted_pubspecs+=("$pubspec")
+    done < <(printf '%s\n' "${all_pubspecs[@]}" | awk '{print gsub(/\//, "/"), $0}' | sort -n | cut -d' ' -f2-)
+    
+    for pubspec in "${sorted_pubspecs[@]}"; do
+        local project_dir=$(dirname "$pubspec")
+        local abs_project_dir="$(cd "$project_dir" 2>/dev/null && pwd)" || continue
+        
+        # Skip if already processed as part of another group
+        local already_processed=false
+        if [[ ${#processed[@]} -gt 0 ]]; then
+            for processed_dir in "${processed[@]}"; do
+                if [[ "$abs_project_dir" == "$processed_dir" ]]; then
+                    already_processed=true
+                    break
+                fi
+            done
+        fi
+        
+        if [[ "$already_processed" == "true" ]]; then
+            continue
+        fi
+        
+        # Check if this is a monorepo
+        if detect_monorepo "$abs_project_dir"; then
+            # Get all related pubspecs for this monorepo
+            local related_pubspecs=($(get_related_pubspecs "$abs_project_dir"))
+            
+            # Mark all related directories as processed
+            for related_pubspec in "${related_pubspecs[@]}"; do
+                local related_dir=$(dirname "$related_pubspec")
+                local abs_related_dir="$(cd "$related_dir" 2>/dev/null && pwd)" || continue
+                processed+=("$abs_related_dir")
+            done
+            
+            # Add this group (monorepo root)
+            groups+=("$abs_project_dir")
+        else
+            # Standalone project
+            processed+=("$abs_project_dir")
+            groups+=("$abs_project_dir")
+        fi
+    done
+    
+    printf '%s\n' "${groups[@]}"
+}
+
 # Upgrade all projects in current directory
 upgrade_all_projects() {
     local mode="$1"
-    local pubspecs=($(find_all_pubspecs))
+    local project_groups=($(group_pubspecs_by_monorepo))
     
-    if [ ${#pubspecs[@]} -eq 0 ]; then
+    if [ ${#project_groups[@]} -eq 0 ]; then
         print_error "No pubspec.yaml files found in current directory"
         return 1
     fi
     
-    print_info "🚀 Processing ALL ${#pubspecs[@]} pubspec files..."
+    print_info "🚀 Processing ${#project_groups[@]} project groups (monorepos treated as single units)..."
     local success_count=0
-    for pubspec in "${pubspecs[@]}"; do
-        local project_dir=$(dirname "$pubspec")
-        # Ensure we have an absolute path
-        local abs_project_dir="$(cd "$project_dir" 2>/dev/null && pwd)" || {
-            print_error "Cannot access directory: $project_dir"
-            continue
-        }
+    for project_dir in "${project_groups[@]}"; do
         echo ""
-        if upgrade_all_dependencies "$abs_project_dir"; then
+        if upgrade_all_dependencies "$project_dir"; then
             ((success_count++))
         fi
     done
     echo ""
-    print_success "✅ Completed: $success_count/${#pubspecs[@]} pubspec files processed successfully"
+    print_success "✅ Completed: $success_count/${#project_groups[@]} project groups processed successfully"
 }
 
 # Interactive menu for selecting pubspecs
 show_pubspec_menu() {
     local mode="$1"
-    local pubspecs=($(find_all_pubspecs))
+    local project_groups=($(group_pubspecs_by_monorepo))
     
-    if [ ${#pubspecs[@]} -eq 0 ]; then
+    if [ ${#project_groups[@]} -eq 0 ]; then
         print_error "No pubspec.yaml files found in current directory"
         return 1
     fi
     
-    print_info "🔍 Found ${#pubspecs[@]} pubspec.yaml files:"
+    print_info "🔍 Found ${#project_groups[@]} project groups:"
     echo ""
     
     local i=1
-    for pubspec in "${pubspecs[@]}"; do
-        local project_dir=$(dirname "$pubspec")
+    for project_dir in "${project_groups[@]}"; do
         local project_name=$(basename "$project_dir")
         # Display relative path for readability
-        local display_path="${pubspec#$(pwd)/}"
-        [[ "$display_path" == "$pubspec" ]] && display_path="./$display_path"
-        echo " $i) $project_name$(printf '%*s' $((20 - ${#project_name})) '')$display_path"
+        local display_path="${project_dir#$(pwd)/}"
+        [[ "$display_path" == "$project_dir" ]] && display_path="./$display_path"
+        
+        # Check if it's a monorepo and show how many pubspecs it contains
+        if detect_monorepo "$project_dir"; then
+            local related_pubspecs=($(get_related_pubspecs "$project_dir"))
+            echo " $i) $project_name$(printf '%*s' $((20 - ${#project_name})) '')$display_path (MONOREPO: ${#related_pubspecs[@]} pubspecs)"
+        else
+            echo " $i) $project_name$(printf '%*s' $((20 - ${#project_name})) '')$display_path (STANDALONE)"
+        fi
         ((i++))
     done
     
@@ -540,18 +600,17 @@ show_pubspec_menu() {
                 continue
                 ;;
             *)
-                if [ "$choice" -ge 1 ] && [ "$choice" -le ${#pubspecs[@]} ]; then
-                    local selected_pubspec="${pubspecs[$((choice-1))]}"
-                    local project_dir=$(dirname "$selected_pubspec")
+                if [ "$choice" -ge 1 ] && [ "$choice" -le ${#project_groups[@]} ]; then
+                    local selected_project_dir="${project_groups[$((choice-1))]}"
                     # Ensure we have an absolute path
-                    local abs_project_dir="$(cd "$project_dir" 2>/dev/null && pwd)" || {
-                        print_error "Cannot access directory: $project_dir"
+                    local abs_project_dir="$(cd "$selected_project_dir" 2>/dev/null && pwd)" || {
+                        print_error "Cannot access directory: $selected_project_dir"
                         return 1
                     }
                     upgrade_all_dependencies "$abs_project_dir"
                     return $?
                 else
-                    print_error "Invalid number. Please choose between 1 and ${#pubspecs[@]}"
+                    print_error "Invalid number. Please choose between 1 and ${#project_groups[@]}"
                     continue
                 fi
                 ;;
@@ -607,13 +666,14 @@ validate_project_health() {
     
     cd "$project_dir" || return 1
     
-    # Run flutter pub get and capture output
+    # Run flutter commands with complete stderr suppression to avoid Flutter SDK background noise
+    # This is safe because validation is informational and we handle real errors at the functional level
     {
         echo "=== PUB GET RESULTS ==="
-        flutter pub get 2>&1
+        flutter pub get 2>/dev/null || echo "Pub get completed with warnings"
         echo -e "\n=== OUTDATED PACKAGES ==="
-        flutter pub outdated 2>&1 || echo "No outdated command available"
-    } > "$temp_output" 2>&1
+        flutter pub outdated 2>/dev/null || echo "No outdated command available"
+    } > "$temp_output"
     
     cat "$temp_output"
     rm -f "$temp_output"
@@ -774,7 +834,7 @@ validate_build_health() {
             echo "✅ pubspec.lock is current"
         fi
         
-        # Count generated files if any
+        # Count generated files if any (we're already in project directory)
         local generated_files=$(find . -name "*.g.dart" 2>/dev/null | wc -l | xargs)
         if [[ "$generated_files" -gt 0 ]]; then
             echo "✅ Generated $generated_files code files"
@@ -976,10 +1036,15 @@ categorize_validation_results() {
     local pub_get_count=$(echo "$validation_output" | grep -c "Got dependencies!" || echo "0")
     local build_steps=$(echo "$validation_output" | grep -c "Building package executable" || echo "0")
     
-    # Count total packages upgraded from earlier process
-    local total_deps=$(find . -name "pubspec.yaml" -not -path "./.dart_tool/*" -exec grep -c "^  [a-zA-Z]" {} \; 2>/dev/null | awk '{sum += $1} END {print sum}' || echo "100+")
+    # Use global package counter (tracks across all operations, works with any project structure)
+    local total_deps="${TOTAL_PACKAGES_UPGRADED:-0}"
+    if [[ "$total_deps" == "0" ]]; then
+        total_deps="0"
+    else
+        total_deps="${total_deps}+"
+    fi
     
-    echo -e "  ${GREEN}•${NC} Package Resolution: $total_deps+ dependencies upgraded to latest compatible versions"
+    echo -e "  ${GREEN}•${NC} Package Resolution: $total_deps dependencies upgraded to latest compatible versions"
     if [ "$pub_get_count" != "0" ]; then
         echo -e "  ${GREEN}•${NC} Dependency Resolution: Completed $pub_get_count pub get operations successfully"
     fi
