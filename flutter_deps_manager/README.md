@@ -11,9 +11,15 @@ curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/downloa
 
 **The installer automatically:**
 - ✅ **Detects permissions** and chooses the best installation mode
+- ✅ **Auto-detects existing installations** - seamlessly upgrades without manual uninstall
 - ✅ **Sets up PATH** automatically for user installations  
 - ✅ **Handles sudo** prompts only when needed
 - ✅ **Works immediately** after installation
+
+**🔄 Works for both fresh install and upgrades:**
+- Same command installs v1.1.7 fresh OR upgrades existing v1.1.6 → v1.1.7
+- No need to uninstall first - the installer handles everything
+- Preserves your current installation directory and PATH settings
 
 ### 📍 Installation Modes
 
@@ -306,15 +312,9 @@ which flutter-deps-upgrade
 
 ### Update to Latest Version
 ```bash
-# Re-run the installer - it will automatically upgrade your existing installation
+# Same command as initial install - automatically upgrades existing installation
 curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.1.7/install.sh | bash
 ```
-
-**🔄 Smart Update Process:**
-- ✅ **Auto-detects existing installation** - no manual uninstall needed
-- ✅ **Seamless upgrades** - v1.1.6 → v1.1.7 automatically 
-- ✅ **Preserves your settings** - installation directory and PATH remain unchanged
-- ✅ **Works every time** - same command for fresh install or upgrade
 
 ### Uninstall
 ```bash
