@@ -17,14 +17,21 @@ echo "1.2.0" > VERSION
 git add -A
 git commit -m "Release v1.2.0"
 git tag v1.2.0
+git push origin main
+git push origin v1.2.0
 ```
 
-**Step 4**: Build and release
+**Step 4**: Build packages (optional - for additional downloads)
 ```bash
-./build.sh
+./build.sh  # Only if you want .tar.gz/.zip packages
 ```
 
 That's it! ✅
+
+Users can now install with:
+```bash
+curl -fsSL https://github.com/MarnesMukuru/flutter_deps_manager/releases/download/v1.2.0/install.sh | bash
+```
 
 ## What Gets Updated Automatically
 
