@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_NAME="flutter-deps-upgrade"
-VERSION="1.1.8"
+VERSION="1.1.9"
 
 # Colors
 RED='\033[0;31m'

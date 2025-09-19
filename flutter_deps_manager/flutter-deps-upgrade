@@ -8,7 +8,7 @@ set -euo pipefail
 
 # Version and metadata
 SCRIPT_NAME="flutter-deps-upgrade"
-VERSION=$(cat "${BASH_SOURCE[0]%/*}/VERSION" 2>/dev/null || echo "1.1.8")
+VERSION=$(cat "${BASH_SOURCE[0]%/*}/VERSION" 2>/dev/null || echo "1.1.9")
 # Determine the library directory
 if [[ -d "/usr/local/lib/flutter-deps-upgrade" ]]; then
     # System-wide installation
